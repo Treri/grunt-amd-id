@@ -1,5 +1,6 @@
 var requirejs = require('requirejs');
 var async = require('async');
+var chalk = require('chalk');
 
 module.exports = function(grunt){
   var LOG_LEVEL_TRACE = 0, LOG_LEVEL_WARN = 2;
@@ -16,19 +17,6 @@ module.exports = function(grunt){
       }
     };
   });
-
-  var trimSuffix = function(name){
-    return name.replace(/\.js$/, '');
-  };
-
-  // The following catches errors in the user-defined `done` function and outputs them.
-  var tryCatch = function(fn, done, output) {
-    try {
-      fn(done, output);
-    } catch(e) {
-      grunt.fail.warn('There was an error while processing your done function: "' + e + '"');
-    }
-  };
 
   grunt.registerMultiTask('amd_id', 'add module id to anonymous module define', function(){
     var done = this.async();
@@ -78,7 +66,7 @@ module.exports = function(grunt){
           };
         })
         .map(function(item){
-          item.name = trimSuffix(item.name);
+          item.name = item.name.replace(/\.js$/, '');
           return item;
         })
         .map(function(item){
@@ -95,6 +83,11 @@ module.exports = function(grunt){
           item.paths = paths;
           return item;
         })
+        .map(function(item){
+          // relative out file path
+          item.revOut = item.out;
+          return item;
+        })
         .forEach(function(item){
           item.done = options.done;
           item.logLevel = options.logLevel;
@@ -103,7 +96,15 @@ module.exports = function(grunt){
     });
 
     async.each(requireOptions, function(requireOption, cbk){
-      requirejs.optimize(requireOption, tryCatch.bind(null, requireOption.done, cbk));
+      requirejs.optimize(requireOption, (function(fn, done, response){
+        grunt.log.ok('Optimized ' + chalk.cyan(requireOption.revOut) + '\'s module id to "' + chalk.cyan(requireOption.name) + '"');
+        // The following catches errors in the user-defined `done` function and outputs them.
+        try {
+          fn(done, response);
+        } catch(e) {
+          grunt.fail.warn('There was an error while processing your done function: "' + e + '"');
+        }
+      }).bind(null, requireOption.done, cbk));
     }, done);
 
   });
