@@ -3,7 +3,8 @@ var async = require('async');
 var chalk = require('chalk');
 
 module.exports = function(grunt){
-  var LOG_LEVEL_TRACE = 0, LOG_LEVEL_WARN = 2;
+  var LOG_LEVEL_TRACE = 0,
+      LOG_LEVEL_WARN = 2;
 
   // TODO: extend this to send build log to grunt.log.ok / grunt.log.error
   // by overriding the r.js logger (or submit issue to r.js to expand logging support)
@@ -18,8 +19,10 @@ module.exports = function(grunt){
     };
   });
 
-  grunt.registerMultiTask('amd_id', 'add module id to anonymous module define', function(){
+  grunt.registerMultiTask('amd_id', 'add module id to anonymous module', function(){
+
     var done = this.async();
+
     var options = this.options({
       logLevel: grunt.option('verbose') ? LOG_LEVEL_TRACE : LOG_LEVEL_WARN,
       done: function(done, response){
@@ -65,32 +68,21 @@ module.exports = function(grunt){
             out: path
           };
         })
-        .map(function(item){
+        .forEach(function(item){
+
           item.name = item.name.replace(/\.js$/, '');
-          return item;
-        })
-        .map(function(item){
           item.name = item.name.replace(baseUrl, '');
-          return item;
-        })
-        .map(function(item){
           item.name = options.replace(item.name);
-          return item;
-        })
-        .map(function(item){
+
+          item.revOut = item.out;
+
           item.baseUrl = options.baseUrl;
           item.optimize = 'none';
           item.paths = paths;
-          return item;
-        })
-        .map(function(item){
-          // relative out file path
-          item.revOut = item.out;
-          return item;
-        })
-        .forEach(function(item){
+
           item.done = options.done;
           item.logLevel = options.logLevel;
+
           requireOptions.push(item);
         });
     });
